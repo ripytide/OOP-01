@@ -1,19 +1,22 @@
-public class Shape {
+public class Shape2D {
     private int sides;
     private String name;
-    private int dimension;
 
     //constructor
-    Shape(int newSides, int newDimension){
-        if((newDimension <= newSides) && (newDimension >= 0)){
+    Shape2D(int newSides){
+        if(newSides >= 0){
             sides = newSides;
-            dimension = newDimension;
             if(sides == 3){
                 name = "triangle";
             }
         }else{
             System.out.println("that shape does not exit!");
         }
+    }
+
+    Shape2D(){
+        sides = 0;
+        name = "point";
     }
 
     //getters and setters
@@ -27,9 +30,5 @@ public class Shape {
 
     public int getSides(){
         return sides;
-    }
-
-    public int getDimension(){
-        return dimension;
     }
 }
