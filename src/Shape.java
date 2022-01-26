@@ -5,12 +5,14 @@ public class Shape {
 
     //constructor
     Shape(int newSides, int newDimension){
-        if(newSides > 2 && dimension >= 0){
+        if((newDimension <= newSides) && (newDimension >= 0)){
             sides = newSides;
             dimension = newDimension;
             if(sides == 3){
                 name = "triangle";
             }
+        }else{
+            System.out.println("that shape does not exit!");
         }
     }
 
