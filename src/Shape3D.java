@@ -1,3 +1,5 @@
+import java.util.Random;
+
 public class Shape3D extends Shape2D {
     private int faces;
 
@@ -16,5 +18,10 @@ public class Shape3D extends Shape2D {
         if(newFaces >= 0){
             faces = newFaces;
         }
+    }
+
+    public int roll(){
+        Random rand = new Random();
+        return (rand.nextInt(faces) + 1);
     }
 }

@@ -9,5 +9,7 @@ class HelloWorld {
 
     System.out.println("a "+square.getName()+" has "+square.getSides()+" sides");
     System.out.println("a "+cube.getName()+" has "+cube.getSides()+" edges and "+cube.getFaces()+" faces");
+
+    System.out.println("the cube rolled a "+cube.roll());
   }
 }
