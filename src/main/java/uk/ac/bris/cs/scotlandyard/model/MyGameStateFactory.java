@@ -40,11 +40,18 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 
 		ArrayList<Piece> usedPieces = new ArrayList();
+		ArrayList<Integer> usedLocations = new ArrayList();
 		for (Player p : detectives) {
 			if (usedPieces.contains(p.piece())) {
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException("Duplicate detectives");
 			} else {
 				usedPieces.add(p.piece());
+			}
+
+			if(usedLocations.contains(p.location())){
+				throw new IllegalArgumentException("Duplicate locations");
+			}else{
+				usedLocations.add(p.location());
 			}
 		}
 
