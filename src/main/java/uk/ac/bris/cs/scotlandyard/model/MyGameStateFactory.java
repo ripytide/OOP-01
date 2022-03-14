@@ -53,6 +53,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}else{
 				usedLocations.add(p.location());
 			}
+
+			if(p.tickets().get(ScotlandYard.Ticket.SECRET) > 0){
+				throw new IllegalArgumentException("detectives should not have secret tickets");
+			}
+			if(p.tickets().get(ScotlandYard.Ticket.DOUBLE) > 0){
+				throw new IllegalArgumentException("detectives should not have double tickets");
+			}
 		}
 
 		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
