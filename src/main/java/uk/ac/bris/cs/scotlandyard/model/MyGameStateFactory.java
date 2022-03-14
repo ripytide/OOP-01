@@ -17,9 +17,12 @@ import java.util.Optional;
  */
 public final class MyGameStateFactory implements Factory<GameState> {
 
-	@Nonnull @Override public GameState build(@Nonnull GameSetup setup,
-											  @Nonnull Player mrX,
-											  @Nonnull ImmutableList<Player> detectives){
+	@Nonnull @Override public GameState build(GameSetup setup,
+											  Player mrX,
+											  ImmutableList<Player> detectives){
+		if(mrX == null){
+			throw new NullPointerException("MrX is Null");
+		}
 		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
 	}
 
