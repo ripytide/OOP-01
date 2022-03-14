@@ -28,6 +28,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			throw new NullPointerException("A detective is Null");
 		}
 
+		if(!mrX.isMrX()){
+			throw new IllegalArgumentException("No mrX");
+		}
+
 		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
 	}
 
