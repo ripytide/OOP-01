@@ -34,18 +34,17 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private ImmutableSet<Piece> winner;
 
 
-		@Nonnull
 		private MyGameState(
-				final GameSetup setup,
-				final ImmutableSet<Piece> remaining,
-				final ImmutableList<LogEntry> log,
-				final Player mrX,
-				final List<Player> detectives){
+				@Nonnull final GameSetup setup,
+				@Nonnull final ImmutableSet<Piece> remaining,
+				@Nonnull final ImmutableList<LogEntry> log,
+				@Nonnull final Player mrX,
+				@Nonnull final List<Player> detectives){
 			this.setup = setup;
 			this.remaining = remaining;
 			this.log = log;
 			this.mrX = mrX;
-			this. detectives = detectives;
+			this.detectives = detectives;
 		}
 
 
