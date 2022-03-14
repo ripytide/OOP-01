@@ -44,7 +44,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if (usedPieces.contains(p.piece())) {
 				throw new IllegalArgumentException();
 			} else {
-				unusedPieces.add(p.piece());
+				usedPieces.add(p.piece());
 			}
 		}
 
