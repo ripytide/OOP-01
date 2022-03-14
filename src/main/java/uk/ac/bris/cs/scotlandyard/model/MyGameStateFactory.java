@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableSet;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,15 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		if(detectives.stream().filter(p -> !p.isDetective()).collect(Collectors.toList()).size() > 0){
 			throw new IllegalArgumentException("Multiple MrXs");
+		}
+
+		ArrayList<Piece> usedPieces = new ArrayList();
+		for (Player p : detectives) {
+			if (usedPieces.contains(p.piece())) {
+				throw new IllegalArgumentException();
+			} else {
+				unusedPieces.add(p.piece());
+			}
 		}
 
 		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
