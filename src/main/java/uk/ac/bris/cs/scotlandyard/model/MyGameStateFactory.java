@@ -20,9 +20,14 @@ public final class MyGameStateFactory implements Factory<GameState> {
 	@Nonnull @Override public GameState build(GameSetup setup,
 											  Player mrX,
 											  ImmutableList<Player> detectives){
-		if(mrX == null){
+		if(mrX == null ){
 			throw new NullPointerException("MrX is Null");
 		}
+
+		if(detectives.contains(null)){
+			throw new NullPointerException("A detective is Null");
+		}
+
 		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
 	}
 
