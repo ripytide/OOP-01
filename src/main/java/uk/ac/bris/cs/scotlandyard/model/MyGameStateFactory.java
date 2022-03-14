@@ -17,17 +17,38 @@ import java.util.Optional;
  */
 public final class MyGameStateFactory implements Factory<GameState> {
 
-	private GameSetup setup;
-	private ImmutableSet<Piece> remaining;
-	private ImmutableList<LogEntry> log;
-	private Player mrX;
-	private List<Player> detectives;
-	private ImmutableSet<Move> moves;
-	private ImmutableSet<Piece> winner;
-
-
+	@Nonnull @Override public GameState build(GameSetup setup,
+											  Player mrX,
+											  ImmutableList<Player> detectives){
+		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
+	}
 
 	private final class MyGameState implements GameState {
+
+		private GameSetup setup;
+		private ImmutableSet<Piece> remaining;
+		private ImmutableList<LogEntry> log;
+		private Player mrX;
+		private List<Player> detectives;
+		private ImmutableSet<Move> moves;
+		private ImmutableSet<Piece> winner;
+
+
+		@Nonnull
+		private MyGameState(
+				final GameSetup setup,
+				final ImmutableSet<Piece> remaining,
+				final ImmutableList<LogEntry> log,
+				final Player mrX,
+				final List<Player> detectives){
+			this.setup = setup;
+			this.remaining = remaining;
+			this.log = log;
+			this.mrX = mrX;
+			this. detectives = detectives;
+		}
+
+
 		@Override public GameSetup getSetup() {  return null; }
 		@Override  public ImmutableSet<Piece> getPlayers() { return null; }
 
@@ -63,14 +84,4 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override public GameState advance(Move move) {  return null;  }
 	}
-
-	@Nonnull @Override public GameState build(
-			GameSetup setup,
-			Player mrX,
-			ImmutableList<Player> detectives) {
-		// TODO
-		throw new RuntimeException("Implement me!");
-
-	}
-
 }
