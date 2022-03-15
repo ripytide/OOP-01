@@ -6,9 +6,8 @@ import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import javax.annotation.concurrent.Immutable;
+import java.util.*;
 
 /**
  * cw-model
@@ -91,7 +90,16 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 
 		@Override public GameSetup getSetup() { return setup; }
-		@Override  public ImmutableSet<Piece> getPlayers() { return null; }
+		@Override  public ImmutableSet<Piece> getPlayers() {
+			Set<Piece> allPlayers = new HashSet<>();
+			for(Player d : detectives){
+				allPlayers.add(d.piece());
+			}
+			allPlayers.add(mrX.piece());
+
+			ImmutableSet<Piece> players = ImmutableSet.copyOf(allPlayers);
+			return players;
+		}
 
 		@Nonnull
 		@Override
