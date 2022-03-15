@@ -104,7 +104,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-			Optional<Player> actualDetective = detectives.stream().filter(d -> d.piece() == detective).findFirst();
+			Optional<Player> actualDetective = getDetective(detective);
 			if (actualDetective.isEmpty()) return Optional.empty();
 			return Optional.of(actualDetective.get().location());
 		}
@@ -112,7 +112,14 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
-			return Optional.empty();
+			Optional<Player> actualDetective = getDetective(piece);
+			if(actualDetective.isEmpty()) {
+				if(piece.isMrX()){
+					return Optional.of(t -> mrX.tickets().get(t));
+				}
+				return Optional.empty();
+			}
+			return Optional.of(t -> actualDetective.get().tickets().get(t));
 		}
 
 		@Nonnull
@@ -134,5 +141,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 
 		@Override public GameState advance(Move move) {  return null;  }
+
+		private Optional<Player> getDetective(Piece piece){
+			return detectives.stream().filter(d -> d.piece() == piece).findFirst();
+		}
 	}
 }
