@@ -137,7 +137,36 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
-			return null;
+			HashSet<Move> availableMoves = new HashSet<>();
+			for(Piece p : remaining){
+				Player player;
+				if(p.isDetective()){
+					player = getDetective(p).get();
+				}else{
+					player = mrX;
+				}
+				int source = player.location();
+
+				HashSet<Move.SingleMove> availableSingleMoves = new HashSet<>();
+				HashMap<ScotlandYard.Ticket, Integer> availableTickets = new HashMap<>();
+				availableTickets.putAll(player.tickets());
+				availableSingleMoves.addAll(getSingleMoves(player, player.location(), availableTickets));
+				availableMoves.addAll(availableSingleMoves);
+
+				if(player == mrX && player.has(ScotlandYard.Ticket.DOUBLE)){
+					for(Move.SingleMove move1 : availableSingleMoves){
+						int destination1 = move1.destination;
+						int oldTickets = availableTickets.get(move1.ticket);
+						availableTickets.put(move1.ticket, oldTickets - 1);
+						Set<Move.SingleMove> availableSecondMoves = getSingleMoves(player, destination1, availableTickets);
+						for(Move.SingleMove move2 : availableSecondMoves){
+							availableMoves.add(new Move.DoubleMove(p, source, move1.ticket, destination1, move2.ticket, move2.destination));
+						}
+					}
+				}
+			}
+			ImmutableSet<Move> immutableAvailableMoves = ImmutableSet.copyOf(availableMoves);
+			return immutableAvailableMoves;
 		}
 
 		@Override public GameState advance(Move move) {  return null;  }
@@ -145,16 +174,14 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private Optional<Player> getDetective(Piece piece){
 			return detectives.stream().filter(d -> d.piece() == piece).findFirst();
 		}
-		private Set<Move.SingleMove> getSingleMoves(Player player){
-			int source = player.location();
-
+		private Set<Move.SingleMove> getSingleMoves(Player player, int source, HashMap<ScotlandYard.Ticket, Integer> availableTickets){
 			HashSet<Move.SingleMove> availableMoves = new HashSet<>();
 
 			for(int destination : setup.graph.adjacentNodes(source)) {
 				if (!isDetectiveOccupied(destination)) {
 					Set<ScotlandYard.Transport> availableTransport = setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of());
 					for (ScotlandYard.Transport t : availableTransport) {
-						if (player.has(t.requiredTicket())) {
+						if (availableTickets.get(t.requiredTicket()) >= 1) {
 							availableMoves.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
 						}
 					}
