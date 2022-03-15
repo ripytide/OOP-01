@@ -9,10 +9,8 @@ import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * cw-model
@@ -35,12 +33,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			throw new IllegalArgumentException("No mrX");
 		}
 
-		if(detectives.stream().filter(p -> !p.isDetective()).collect(Collectors.toList()).size() > 0){
+		if(detectives.stream().filter(p -> !p.isDetective()).toList().size() > 0){
 			throw new IllegalArgumentException("Multiple MrXs");
 		}
 
-		ArrayList<Piece> usedPieces = new ArrayList();
-		ArrayList<Integer> usedLocations = new ArrayList();
+		ArrayList<Piece> usedPieces = new ArrayList<>();
+		ArrayList<Integer> usedLocations = new ArrayList<>();
 		for (Player p : detectives) {
 			if (usedPieces.contains(p.piece())) {
 				throw new IllegalArgumentException("Duplicate detectives");
