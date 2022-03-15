@@ -145,5 +145,32 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private Optional<Player> getDetective(Piece piece){
 			return detectives.stream().filter(d -> d.piece() == piece).findFirst();
 		}
+		private Set<Move.SingleMove> getSingleMoves(Player player){
+			int source = player.location();
+
+			HashSet<Move.SingleMove> availableMoves = new HashSet<>();
+
+			for(int destination : setup.graph.adjacentNodes(source)) {
+				if (!isDetectiveOccupied(destination)) {
+					Set<ScotlandYard.Transport> availableTransport = setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of());
+					for (ScotlandYard.Transport t : availableTransport) {
+						if (player.has(t.requiredTicket())) {
+							availableMoves.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
+						}
+					}
+					if (player.has(ScotlandYard.Ticket.SECRET) && !availableTransport.contains(ScotlandYard.Transport.FERRY) && !availableTransport.isEmpty()){
+						availableMoves.add(new Move.SingleMove(player.piece(), source, ScotlandYard.Ticket.SECRET, destination));
+					}
+				}
+			}
+			return availableMoves;
+		}
+
+		private boolean isDetectiveOccupied(int location){
+			for (Player d: detectives){
+				if (d.location() == location) return true;
+			}
+			return false;
+		}
 	}
 }
