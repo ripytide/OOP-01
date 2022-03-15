@@ -60,12 +60,11 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(p.tickets().get(ScotlandYard.Ticket.DOUBLE) > 0){
 				throw new IllegalArgumentException("detectives should not have double tickets");
 			}
-
-			if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty");
-
-			if(setup.graph.nodes().size() == 0) throw new IllegalArgumentException("Graph is empty");
-
 		}
+
+		if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty");
+
+		if(setup.graph.nodes().size() == 0) throw new IllegalArgumentException("Graph is empty");
 
 		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
 	}
