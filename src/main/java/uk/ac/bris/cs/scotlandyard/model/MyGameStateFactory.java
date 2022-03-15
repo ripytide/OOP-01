@@ -1,13 +1,11 @@
 package uk.ac.bris.cs.scotlandyard.model;
 
 import com.google.common.collect.ImmutableList;
-
-import javax.annotation.Nonnull;
-
 import com.google.common.collect.ImmutableSet;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -92,7 +90,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 
 
-		@Override public GameSetup getSetup() {  return null; }
+		@Override public GameSetup getSetup() { return setup; }
 		@Override  public ImmutableSet<Piece> getPlayers() { return null; }
 
 		@Nonnull

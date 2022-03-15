@@ -122,4 +122,8 @@ fabric.properties
 
 !repo/**
 
+.settings
+.classpath
+.project
+
 .idea/
