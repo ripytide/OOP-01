@@ -177,13 +177,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: " + move);
 
 			// mutable copy of things
-			List<Piece> newRemaining = remaining.stream().toList();
-			List<LogEntry> newLog = log.asList();
-			List<Player> newDetectives = detectives.stream().toList();
+			List<Piece> newRemaining = new ArrayList<>(remaining);
+			List<LogEntry> newLog = new ArrayList<>(log);
+			List<Player> newDetectives = new ArrayList<>(detectives);
 			Player newMrX = mrX;
 
 			Piece currentPiece = move.commencedBy();
-			newRemaining.remove(move.commencedBy());
+			newRemaining.remove(currentPiece);
 
 			Move.Visitor<Integer> getEndLocationVisitor = new GetEndLocationVisitor();
 			if (currentPiece.isDetective()) {
