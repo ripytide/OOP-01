@@ -10,6 +10,7 @@ import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * cw-model
@@ -179,24 +180,70 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			List<Piece> newRemaining = remaining.stream().toList();
 			List<LogEntry> newLog = log.asList();
 			List<Player> newDetectives = detectives.stream().toList();
+			Player newMrX = mrX;
 
+			Piece currentPiece = move.commencedBy();
+			newRemaining.remove(move.commencedBy());
 
-			if (move.commencedBy().isDetective()) {
-				newRemaining.remove(move.commencedBy());
+			Move.Visitor<Integer> getEndLocationVisitor = new GetEndLocationVisitor();
+			if (currentPiece.isDetective()) {
+				if(newRemaining.isEmpty()){
+					newRemaining.add(mrX.piece());
+				}
 
-				Player detective = getDetective(move.commencedBy()).get();
+				Player detective = getDetective(currentPiece).get();
 				newDetectives.remove(detective);
 
 				HashMap<ScotlandYard.Ticket, Integer> newTickets = new HashMap<>(detective.tickets());
-
 				removeUsedTickets(newTickets, move.tickets());
 
-				newDetectives.add(new Player(move.commencedBy(), ImmutableMap.copyOf(newTickets), ((Move.SingleMove) move).destination));
+				newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newTickets), move.accept(getEndLocationVisitor)));
 			} else {
+				newRemaining = detectives.stream().map(d -> d.piece()).collect(Collectors.toList());
 
+				int moveNumber = log.size();
+
+				//used in appending log entries
+				Move.Visitor<List<LogEntry>> getAdditionalLogEntriesVisitor = new Move.Visitor<List<LogEntry>>() {
+					@Override
+					public List<LogEntry> visit(Move.SingleMove move) {
+						List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
+						if(setup.moves.get(moveNumber) == false){
+							newAdditionalLogEntries.add(LogEntry.hidden(move.ticket));
+						}else{
+							newAdditionalLogEntries.add(LogEntry.reveal(move.ticket, move.destination));
+						}
+						return newAdditionalLogEntries;
+					}
+
+					@Override
+					public List<LogEntry> visit(Move.DoubleMove move) {
+						List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
+						if(setup.moves.get(moveNumber) == false){
+							newAdditionalLogEntries.add(LogEntry.hidden(move.ticket1));
+						}else{
+							newAdditionalLogEntries.add(LogEntry.reveal(move.ticket1, move.destination1));
+						}
+
+						if(setup.moves.get(moveNumber + 1) == false){
+							newAdditionalLogEntries.add(LogEntry.hidden(move.ticket2));
+						}else{
+							newAdditionalLogEntries.add(LogEntry.reveal(move.ticket2, move.destination2));
+						}
+
+						return newAdditionalLogEntries;
+					}
+				};
+
+				newLog.addAll(move.accept(getAdditionalLogEntriesVisitor));
+
+				HashMap<ScotlandYard.Ticket, Integer> newTickets = new HashMap<>(mrX.tickets());
+				removeUsedTickets(newTickets, move.tickets());
+
+				newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newTickets), move.accept(getEndLocationVisitor));
 			}
-			return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), mrX, ImmutableList.copyOf(newDetectives));
 
+			return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
 		}
 
 		private static void removeUsedTickets(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
