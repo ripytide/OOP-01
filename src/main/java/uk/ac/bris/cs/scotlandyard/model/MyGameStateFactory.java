@@ -1,6 +1,8 @@
 package uk.ac.bris.cs.scotlandyard.model;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
@@ -70,7 +72,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private ImmutableSet<Piece> remaining;
 		private ImmutableList<LogEntry> log;
 		private Player mrX;
-		private List<Player> detectives;
+		private ImmutableList<Player> detectives;
 		private ImmutableSet<Move> moves;
 		private ImmutableSet<Piece> winner;
 
@@ -80,12 +82,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				@Nonnull final ImmutableSet<Piece> remaining,
 				@Nonnull final ImmutableList<LogEntry> log,
 				@Nonnull final Player mrX,
-				@Nonnull final List<Player> detectives){
+				@Nonnull final ImmutableList<Player> detectives){
 			this.setup = setup;
 			this.remaining = remaining;
 			this.log = log;
 			this.mrX = mrX;
 			this.detectives = detectives;
+			this.moves = getAvailableMoves();
 		}
 
 
@@ -169,7 +172,39 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			return immutableAvailableMoves;
 		}
 
-		@Override public GameState advance(Move move) {  return null;  }
+		@Override public GameState advance(Move move) {
+			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: " + move);
+
+			// mutable copy of things
+			List<Piece> newRemaining = remaining.stream().toList();
+			List<LogEntry> newLog = log.asList();
+			List<Player> newDetectives = detectives.stream().toList();
+
+
+			if (move.commencedBy().isDetective()) {
+				newRemaining.remove(move.commencedBy());
+
+				Player detective = getDetective(move.commencedBy()).get();
+				newDetectives.remove(detective);
+
+				HashMap<ScotlandYard.Ticket, Integer> newTickets = new HashMap<>(detective.tickets());
+
+				removeUsedTickets(newTickets, move.tickets());
+
+				newDetectives.add(new Player(move.commencedBy(), ImmutableMap.copyOf(newTickets), ((Move.SingleMove) move).destination));
+			} else {
+
+			}
+			return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), mrX, ImmutableList.copyOf(newDetectives));
+
+		}
+
+		private static void removeUsedTickets(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
+			for (ScotlandYard.Ticket t : usedTickets) {
+				Integer oldTicketCount = tickets.get(t);
+				tickets.put(t, oldTicketCount - 1);
+			}
+		}
 
 		private Optional<Player> getDetective(Piece piece){
 			return detectives.stream().filter(d -> d.piece() == piece).findFirst();
