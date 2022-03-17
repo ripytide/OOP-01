@@ -157,7 +157,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				availableSingleMoves.addAll(getSingleMoves(player, player.location(), availableTickets));
 				availableMoves.addAll(availableSingleMoves);
 
-				if(player == mrX && player.has(ScotlandYard.Ticket.DOUBLE)){
+				if(player == mrX && player.has(ScotlandYard.Ticket.DOUBLE) && log.size() + 1 < setup.moves.size()){
 					for(Move.SingleMove move1 : availableSingleMoves){
 						int destination1 = move1.destination;
 						int oldTickets = availableTickets.get(move1.ticket);
