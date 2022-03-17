@@ -90,6 +90,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			this.mrX = mrX;
 			this.detectives = detectives;
 			this.moves = getAvailableMoves();
+			this.winner = getWinner();
 		}
 
 
@@ -135,7 +136,22 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public ImmutableSet<Piece> getWinner() {
-			return null;
+			//refactor me
+			if (isMrXTurn() && log.size() >= setup.moves.size()) {
+				moves = ImmutableSet.of();
+				return ImmutableSet.of(mrX.piece());
+			} else if (isMrXTurn() && moves.isEmpty()){
+				moves = ImmutableSet.of();
+				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
+			} else if (isDetectivesTurn() && moves.isEmpty()) {
+				moves = ImmutableSet.of();
+				return ImmutableSet.of(mrX.piece());
+			} else if (isDetectiveOccupied(mrX.location())) {
+				moves = ImmutableSet.of();
+				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
+			} else {
+				return ImmutableSet.of();
+			}
 		}
 
 		@Nonnull
@@ -248,6 +264,14 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 
 			return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
+		}
+
+		private boolean isDetectivesTurn(){
+			return remaining.stream().filter(Piece::isMrX).collect(Collectors.toList()).isEmpty();
+		}
+
+		private boolean isMrXTurn() {
+			return !isDetectivesTurn();
 		}
 
 		private static void removeUsedTickets(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
