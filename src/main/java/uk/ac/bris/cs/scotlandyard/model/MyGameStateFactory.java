@@ -152,13 +152,15 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				int source = player.location();
 
 				HashSet<Move.SingleMove> availableSingleMoves = new HashSet<>();
-				HashMap<ScotlandYard.Ticket, Integer> availableTickets = new HashMap<>();
-				availableTickets.putAll(player.tickets());
-				availableSingleMoves.addAll(getSingleMoves(player, player.location(), availableTickets));
+
+				availableSingleMoves.addAll(getSingleMoves(player, player.location(), player.tickets()));
 				availableMoves.addAll(availableSingleMoves);
 
 				if(player == mrX && player.has(ScotlandYard.Ticket.DOUBLE) && log.size() + 1 < setup.moves.size()){
 					for(Move.SingleMove move1 : availableSingleMoves){
+						HashMap<ScotlandYard.Ticket, Integer> availableTickets = new HashMap<>();
+						availableTickets.putAll(player.tickets());
+
 						int destination1 = move1.destination;
 						int oldTickets = availableTickets.get(move1.ticket);
 						availableTickets.put(move1.ticket, oldTickets - 1);
@@ -256,7 +258,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private Optional<Player> getDetective(Piece piece){
 			return detectives.stream().filter(d -> d.piece() == piece).findFirst();
 		}
-		private Set<Move.SingleMove> getSingleMoves(Player player, int source, HashMap<ScotlandYard.Ticket, Integer> availableTickets){
+		private Set<Move.SingleMove> getSingleMoves(Player player, int source, Map<ScotlandYard.Ticket, Integer> availableTickets){
 			HashSet<Move.SingleMove> availableMoves = new HashSet<>();
 
 			for(int destination : setup.graph.adjacentNodes(source)) {
