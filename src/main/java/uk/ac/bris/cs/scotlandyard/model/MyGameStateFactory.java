@@ -182,7 +182,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			List<Piece> newRemaining = new ArrayList<>(remaining);
 			List<LogEntry> newLog = new ArrayList<>(log);
 			List<Player> newDetectives = new ArrayList<>(detectives);
-			Player newMrX = mrX;
+			Player newMrX;
+			HashMap<ScotlandYard.Ticket, Integer> newMrXTickets = new HashMap<>(mrX.tickets());
 
 			Piece currentPiece = move.commencedBy();
 			newRemaining.remove(currentPiece);
@@ -196,10 +197,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				Player detective = getDetective(currentPiece).get();
 				newDetectives.remove(detective);
 
-				HashMap<ScotlandYard.Ticket, Integer> newTickets = new HashMap<>(detective.tickets());
-				removeUsedTickets(newTickets, move.tickets());
+				HashMap<ScotlandYard.Ticket, Integer> newDetectiveTickets = new HashMap<>(detective.tickets());
+				removeUsedTickets(newDetectiveTickets, move.tickets());
+				giveMrxUsedTicket(newMrXTickets, move.tickets());
 
-				newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newTickets), move.accept(getEndLocationVisitor)));
+				newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
+				newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
 			} else {
 				newRemaining = detectives.stream().map(d -> d.piece()).collect(Collectors.toList());
 
@@ -239,10 +242,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 				newLog.addAll(move.accept(getAdditionalLogEntriesVisitor));
 
-				HashMap<ScotlandYard.Ticket, Integer> newTickets = new HashMap<>(mrX.tickets());
-				removeUsedTickets(newTickets, move.tickets());
+				removeUsedTickets(newMrXTickets, move.tickets());
 
-				newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newTickets), move.accept(getEndLocationVisitor));
+				newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), move.accept(getEndLocationVisitor));
 			}
 
 			return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
@@ -282,6 +284,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				if (d.location() == location) return true;
 			}
 			return false;
+		}
+
+		private static void giveMrxUsedTicket(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
+			for (ScotlandYard.Ticket t : usedTickets) {
+				Integer oldTicketCount = tickets.get(t);
+				tickets.put(t, oldTicketCount + 1);
+			}
 		}
 	}
 }
