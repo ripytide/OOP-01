@@ -275,8 +275,18 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		public ImmutableSet<Piece> calculateWinner() {
 			//refactor me
+			Boolean noTickets = true;
+			for(Player d : detectives){
+				for(Integer ticketNum : d.tickets().values())
+				if(ticketNum > 0){
+					noTickets = false;
+				}
+			}
+
 			ImmutableSet<Move> possibleMoves = getMoves();
-			if (isMrXTurn() && log.size() >= setup.moves.size()) {
+			if (isMrXTurn() && noTickets){
+				return ImmutableSet.of(mrX.piece());
+			} else if (isMrXTurn() && log.size() >= setup.moves.size()) {
 				return ImmutableSet.of(mrX.piece());
 			} else if (isMrXTurn() && possibleMoves.isEmpty()){
 				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
