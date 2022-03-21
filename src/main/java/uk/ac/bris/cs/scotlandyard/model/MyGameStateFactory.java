@@ -21,22 +21,21 @@ public final class MyGameStateFactory implements Factory<GameState> {
 	@Nonnull @Override public GameState build(GameSetup setup,
 											  Player mrX,
 											  ImmutableList<Player> detectives){
-		if(mrX == null ){
-			throw new NullPointerException("MrX is Null");
-		}
-
-		if(detectives.contains(null)){
-			throw new NullPointerException("A detective is Null");
-		}
-
-		if(!mrX.isMrX()){
-			throw new IllegalArgumentException("No mrX");
-		}
-
-		if(detectives.stream().filter(p -> !p.isDetective()).toList().size() > 0){
+		//checking validity of parameters given
+		if(mrX == null ) throw new NullPointerException("MrX is Null");
+		if(!mrX.isMrX()) throw new IllegalArgumentException("No mrX");
+		if(detectives.stream().filter(p -> p.isMrX()).toList().size() > 0){
 			throw new IllegalArgumentException("Multiple MrXs");
 		}
+		checkDetectivesValidity(detectives);
 
+		if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty");
+		if(setup.graph.nodes().size() == 0) throw new IllegalArgumentException("Graph is empty");
+
+		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
+	}
+
+	private void checkDetectivesValidity(ImmutableList<Player> detectives){
 		ArrayList<Piece> usedPieces = new ArrayList<>();
 		ArrayList<Integer> usedLocations = new ArrayList<>();
 		for (Player p : detectives) {
@@ -58,13 +57,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(p.tickets().get(ScotlandYard.Ticket.DOUBLE) > 0){
 				throw new IllegalArgumentException("detectives should not have double tickets");
 			}
+			if(p == null) throw new NullPointerException("A detective is Null");
 		}
-
-		if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty");
-
-		if(setup.graph.nodes().size() == 0) throw new IllegalArgumentException("Graph is empty");
-
-		return new MyGameState(setup, ImmutableSet.of(Piece.MrX.MRX), ImmutableList.of(), mrX, detectives);
 	}
 
 	private final class MyGameState implements GameState {
@@ -102,29 +96,31 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 			allPlayers.add(mrX.piece());
 
-			ImmutableSet<Piece> players = ImmutableSet.copyOf(allPlayers);
-			return players;
+			return ImmutableSet.copyOf(allPlayers);
 		}
 
 		@Nonnull
 		@Override
 		public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-			Optional<Player> actualDetective = getDetective(detective);
-			if (actualDetective.isEmpty()) return Optional.empty();
-			return Optional.of(actualDetective.get().location());
+			Optional<Player> optionalDetective = getDetective(detective);
+			if (optionalDetective.isEmpty()) return Optional.empty();
+			return Optional.of(optionalDetective.get().location());
 		}
 
 		@Nonnull
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
-			Optional<Player> actualDetective = getDetective(piece);
-			if(actualDetective.isEmpty()) {
-				if(piece.isMrX()){
-					return Optional.of(t -> mrX.tickets().get(t));
-				}
+			if(piece.isMrX()){
+				return Optional.of(t -> mrX.tickets().get(t));
+			}
+
+			//if not MrX, unwrap optionalDetective
+			Optional<Player> optionalDetective = getDetective(piece);
+			if(optionalDetective.isEmpty()) {
 				return Optional.empty();
 			}
-			return Optional.of(t -> actualDetective.get().tickets().get(t));
+
+			return Optional.of(t -> optionalDetective.get().tickets().get(t));
 		}
 
 		@Nonnull
