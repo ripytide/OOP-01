@@ -174,6 +174,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 				newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
 				newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
+
+				MyGameState partiallyAdvancedState = new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
+				if (partiallyAdvancedState.getMoves().isEmpty() && !newRemaining.isEmpty() && !newRemaining.stream().filter(p -> p.isDetective()).collect(Collectors.toList()).isEmpty()) {
+					newRemaining = new ArrayList<>(Arrays.asList(mrX.piece()));
+				}
+
 			} else {
 				newRemaining = detectives.stream().map(d -> d.piece()).collect(Collectors.toList());
 
@@ -275,18 +281,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		public ImmutableSet<Piece> calculateWinner() {
 			//refactor me
-			Boolean noTickets = true;
-			for(Player d : detectives){
-				for(Integer ticketNum : d.tickets().values())
-				if(ticketNum > 0){
-					noTickets = false;
-				}
-			}
-
 			ImmutableSet<Move> possibleMoves = getMoves();
-			if (isMrXTurn() && noTickets){
-				return ImmutableSet.of(mrX.piece());
-			} else if (isMrXTurn() && log.size() >= setup.moves.size()) {
+			if (isMrXTurn() && log.size() >= setup.moves.size()) {
 				return ImmutableSet.of(mrX.piece());
 			} else if (isMrXTurn() && possibleMoves.isEmpty()){
 				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
