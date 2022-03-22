@@ -141,7 +141,64 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private Optional<Player> getDetective(Piece piece){
 			return detectives.stream().filter(d -> d.piece() == piece).findFirst();
 		}
-		private Set<Move.SingleMove> getSingleMoves(Player player, int source, Map<ScotlandYard.Ticket, Integer> availableTickets){
+
+
+		private boolean isDetectiveOccupied(int location){
+			return detectives.stream().map(Player::location).toList().contains(location);
+		}
+
+		private static void giveUsedTicket(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
+			usedTickets.forEach(t -> tickets.compute(t, (key, oldTicketCount) -> oldTicketCount + 1));
+		}
+
+		@Nonnull
+		public ImmutableSet<Piece> calculateWinner() {
+			ImmutableSet<Move> possibleMoves = getMoves();
+			boolean logIsFull = log.size() >= setup.moves.size();
+			boolean noAvailableMoves = possibleMoves.isEmpty();
+			boolean mrXCaught = isDetectiveOccupied(mrX.location());
+
+			boolean mrXWins = (isMrXTurn() && logIsFull)
+						   || (isDetectivesTurn() && (noAvailableMoves));
+
+			boolean detectivesWin = (isMrXTurn() && noAvailableMoves && !logIsFull)
+								 || mrXCaught
+								 || isDetectiveOccupied(mrX.location());
+
+			if(mrXWins){
+				return ImmutableSet.of(mrX.piece());
+			}else if(detectivesWin){
+				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
+			}else if(isMrXTurn()){
+				MyGameState nextTurn = advanceNoCheck(possibleMoves.stream().collect(Collectors.toList()).get(0));
+				return nextTurn.winner;
+			}else{
+				return ImmutableSet.of();
+			}
+		}
+
+		@Nonnull
+		public ImmutableSet<Move> getMoves() {
+			HashSet<Move> availableMoves = new HashSet<>();
+			if (isDetectivesTurn()){
+				for(Piece p : remaining) {
+					Player detective = getDetective(p).get();
+					availableMoves.addAll(getSingleMoves(detective, detective.location(), detective.tickets()));
+				}
+			} else {
+				HashSet<Move.SingleMove> availableSingleMoves = getSingleMoves(mrX, mrX.location(), mrX.tickets());
+				availableMoves.addAll(availableSingleMoves);
+
+				boolean twoSpacesInLog = log.size() + 1 < setup.moves.size();
+				if (mrX.has(ScotlandYard.Ticket.DOUBLE) && twoSpacesInLog){
+					availableMoves.addAll(getDoubleMoves(availableSingleMoves, mrX));
+				}
+			}
+
+			return ImmutableSet.copyOf(availableMoves);
+		}
+
+		private HashSet<Move.SingleMove> getSingleMoves(Player player, int source, Map<ScotlandYard.Ticket, Integer> availableTickets){
 			HashSet<Move.SingleMove> availableMoves = new HashSet<>();
 
 			for(int destination : setup.graph.adjacentNodes(source)) {
@@ -167,73 +224,23 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			return availableMoves;
 		}
 
-		private boolean isDetectiveOccupied(int location){
-			return detectives.stream().map(Player::location).toList().contains(location);
-		}
+		public HashSet<Move> getDoubleMoves(HashSet<Move.SingleMove> availableSingleMoves, Player player) {
+			HashSet<Move> doubleMoves = new HashSet<>();
 
-		private static void giveUsedTicket(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
-			usedTickets.forEach(t -> tickets.compute(t, (key, oldTicketCount) -> oldTicketCount + 1));
-		}
+			for(Move.SingleMove move1 : availableSingleMoves){
+				HashMap<ScotlandYard.Ticket, Integer> availableTickets = new HashMap<>();
+				availableTickets.putAll(player.tickets());
 
-		@Nonnull
-		public ImmutableSet<Piece> calculateWinner() {
-			ImmutableSet<Move> possibleMoves = getMoves();
-			boolean logIsFull = log.size() >= setup.moves.size();
-			boolean noAvailableMoves = possibleMoves.isEmpty();
-			boolean MrXCaught = isDetectiveOccupied(mrX.location());
-
-			boolean MrXWins = (isMrXTurn() && logIsFull)
-						   || (isDetectivesTurn() && (noAvailableMoves));
-
-			boolean detectivesWin = (isMrXTurn() && noAvailableMoves && !logIsFull)
-								 || MrXCaught
-								 || isDetectiveOccupied(mrX.location());
-
-			if(MrXWins){
-				return ImmutableSet.of(mrX.piece());
-			}else if(detectivesWin){
-				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
-			}else if(isMrXTurn()){
-				MyGameState nextTurn = advanceNoCheck(possibleMoves.stream().collect(Collectors.toList()).get(0));
-				return nextTurn.winner;
-			}else{
-				return ImmutableSet.of();
-			}
-		}
-		@Nonnull
-		public ImmutableSet<Move> getMoves() {
-			HashSet<Move> availableMoves = new HashSet<>();
-			for(Piece p : remaining){
-				Player player;
-				if(p.isDetective()){
-					player = getDetective(p).get();
-				}else{
-					player = mrX;
-				}
-				int source = player.location();
-
-				HashSet<Move.SingleMove> availableSingleMoves = new HashSet<>();
-
-				availableSingleMoves.addAll(getSingleMoves(player, player.location(), player.tickets()));
-				availableMoves.addAll(availableSingleMoves);
-
-				if(player == mrX && player.has(ScotlandYard.Ticket.DOUBLE) && log.size() + 1 < setup.moves.size()){
-					for(Move.SingleMove move1 : availableSingleMoves){
-						HashMap<ScotlandYard.Ticket, Integer> availableTickets = new HashMap<>();
-						availableTickets.putAll(player.tickets());
-
-						int destination1 = move1.destination;
-						int oldTickets = availableTickets.get(move1.ticket);
-						availableTickets.put(move1.ticket, oldTickets - 1);
-						Set<Move.SingleMove> availableSecondMoves = getSingleMoves(player, destination1, availableTickets);
-						for(Move.SingleMove move2 : availableSecondMoves){
-							availableMoves.add(new Move.DoubleMove(p, source, move1.ticket, destination1, move2.ticket, move2.destination));
-						}
-					}
+				int destination1 = move1.destination;
+				int oldTickets = availableTickets.get(move1.ticket);
+				availableTickets.put(move1.ticket, oldTickets - 1);
+				Set<Move.SingleMove> availableSecondMoves = getSingleMoves(player, destination1, availableTickets);
+				for(Move.SingleMove move2 : availableSecondMoves){
+					doubleMoves.add(new Move.DoubleMove(mrX.piece(), move1.source(), move1.ticket, destination1, move2.ticket, move2.destination));
 				}
 			}
-			ImmutableSet<Move> immutableAvailableMoves = ImmutableSet.copyOf(availableMoves);
-			return immutableAvailableMoves;
+
+			return doubleMoves;
 		}
 
 		public MyGameState advanceNoCheck(Move move) {
