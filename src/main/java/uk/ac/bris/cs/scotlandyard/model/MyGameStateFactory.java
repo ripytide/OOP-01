@@ -2,13 +2,11 @@ package uk.ac.bris.cs.scotlandyard.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
 import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -173,29 +171,32 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			return detectives.stream().map(Player::location).toList().contains(location);
 		}
 
-		private static void giveMrxUsedTicket(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
-			for (ScotlandYard.Ticket t : usedTickets) {
-				Integer oldTicketCount = tickets.get(t);
-				tickets.put(t, oldTicketCount + 1);
-			}
+		private static void giveUsedTicket(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
+			usedTickets.forEach(t -> tickets.compute(t, (key, oldTicketCount) -> oldTicketCount + 1));
 		}
 
 		@Nonnull
 		public ImmutableSet<Piece> calculateWinner() {
 			ImmutableSet<Move> possibleMoves = getMoves();
+			boolean logIsFull = log.size() >= setup.moves.size();
+			boolean noAvailableMoves = possibleMoves.isEmpty();
+			boolean MrXCaught = isDetectiveOccupied(mrX.location());
 
-			if (isMrXTurn() && log.size() >= setup.moves.size()) {
+			boolean MrXWins = (isMrXTurn() && logIsFull)
+						   || (isDetectivesTurn() && (noAvailableMoves));
+
+			boolean detectivesWin = (isMrXTurn() && noAvailableMoves && !logIsFull)
+								 || MrXCaught
+								 || isDetectiveOccupied(mrX.location());
+
+			if(MrXWins){
 				return ImmutableSet.of(mrX.piece());
-			} else if (isMrXTurn() && possibleMoves.isEmpty()) {
+			}else if(detectivesWin){
 				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
-			} else if (isDetectivesTurn() && possibleMoves.isEmpty()) {
-				return ImmutableSet.of(mrX.piece());
-			} else if (isDetectiveOccupied(mrX.location())) {
-				return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
-			} else if (isMrXTurn()) {
+			}else if(isMrXTurn()){
 				MyGameState nextTurn = advanceNoCheck(possibleMoves.stream().collect(Collectors.toList()).get(0));
 				return nextTurn.winner;
-			} else {
+			}else{
 				return ImmutableSet.of();
 			}
 		}
@@ -257,7 +258,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 				HashMap<ScotlandYard.Ticket, Integer> newDetectiveTickets = new HashMap<>(detective.tickets());
 				removeUsedTickets(newDetectiveTickets, move.tickets());
-				giveMrxUsedTicket(newMrXTickets, move.tickets());
+				giveUsedTicket(newMrXTickets, move.tickets());
 
 				newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
 				newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
