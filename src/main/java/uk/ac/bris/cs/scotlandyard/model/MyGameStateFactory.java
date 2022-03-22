@@ -90,21 +90,15 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override public GameSetup getSetup() { return setup; }
 		@Override  public ImmutableSet<Piece> getPlayers() {
-			Set<Piece> allPlayers = new HashSet<>();
-			for(Player d : detectives){
-				allPlayers.add(d.piece());
-			}
+			Set<Piece> allPlayers = new HashSet<>(getDetectivePieces(detectives));
 			allPlayers.add(mrX.piece());
-
 			return ImmutableSet.copyOf(allPlayers);
 		}
 
 		@Nonnull
 		@Override
 		public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-			Optional<Player> optionalDetective = getDetective(detective);
-			if (optionalDetective.isEmpty()) return Optional.empty();
-			return Optional.of(optionalDetective.get().location());
+			return getDetective(detective).map(d -> d.location());
 		}
 
 		@Nonnull
@@ -286,7 +280,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				}
 
 			} else {
-				newRemaining = detectives.stream().map(d -> d.piece()).collect(Collectors.toList());
+				newRemaining = getDetectivePieces(detectives);
 
 				int moveNumber = log.size();
 
@@ -330,6 +324,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 
 			return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
+		}
+
+		private List<Piece> getDetectivePieces(ImmutableList<Player> detectives){
+			return detectives.stream().map(d -> d.piece()).collect(Collectors.toList());
 		}
 	}
 }
