@@ -107,27 +107,16 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(piece.isMrX()){
 				return Optional.of(t -> mrX.tickets().get(t));
 			}
-
-			//if not MrX, unwrap optionalDetective
-			Optional<Player> optionalDetective = getDetective(piece);
-			if(optionalDetective.isEmpty()) {
-				return Optional.empty();
-			}
-
-			return Optional.of(t -> optionalDetective.get().tickets().get(t));
+			return getDetective(piece).map(d -> (t -> d.tickets().get(t)));
 		}
 
 		@Nonnull
 		@Override
-		public ImmutableList<LogEntry> getMrXTravelLog() {
-			return log;
-		}
+		public ImmutableList<LogEntry> getMrXTravelLog() { return log; }
 
 		@Nonnull
 		@Override
-		public ImmutableSet<Piece> getWinner() {
-			return winner;
-		}
+		public ImmutableSet<Piece> getWinner() { return winner; }
 
 		@Nonnull
 		@Override
@@ -142,12 +131,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 
 		private boolean isDetectivesTurn(){
-			return remaining.stream().filter(Piece::isMrX).collect(Collectors.toList()).isEmpty();
+			return remaining.stream().noneMatch(Piece::isMrX);
 		}
 
-		private boolean isMrXTurn() {
-			return !isDetectivesTurn();
-		}
+		private boolean isMrXTurn() { return !isDetectivesTurn(); }
 
 		private static void removeUsedTickets(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
 			for (ScotlandYard.Ticket t : usedTickets) {
