@@ -159,7 +159,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 
 					//adds secret ticket moves without counting Ferries twice
-					if (player.has(ScotlandYard.Ticket.SECRET) && !availableTransport.contains(ScotlandYard.Transport.FERRY) && !availableTransport.isEmpty()){
+					boolean hasSecretTicket = availableTickets.get(ScotlandYard.Ticket.SECRET) >= 1;
+					boolean hasNonFerryTransport = !availableTransport.contains(ScotlandYard.Transport.FERRY) && !availableTransport.isEmpty();
+					if (hasSecretTicket && hasNonFerryTransport){
 						availableMoves.add(new Move.SingleMove(player.piece(), source, ScotlandYard.Ticket.SECRET, destination));
 					}
 				}
@@ -168,10 +170,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 
 		private boolean isDetectiveOccupied(int location){
-			for (Player d: detectives){
-				if (d.location() == location) return true;
-			}
-			return false;
+			return detectives.stream().map(Player::location).toList().contains(location);
 		}
 
 		private static void giveMrxUsedTicket(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
