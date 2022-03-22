@@ -137,10 +137,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private boolean isMrXTurn() { return !isDetectivesTurn(); }
 
 		private static void removeUsedTickets(HashMap<ScotlandYard.Ticket, Integer> tickets, Iterable<ScotlandYard.Ticket> usedTickets) {
-			for (ScotlandYard.Ticket t : usedTickets) {
-				Integer oldTicketCount = tickets.get(t);
-				tickets.put(t, oldTicketCount - 1);
-			}
+			usedTickets.forEach(t -> tickets.compute(t, (key, oldTicketCount) -> oldTicketCount - 1));
 		}
 
 		private Optional<Player> getDetective(Piece piece){
@@ -152,11 +149,16 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			for(int destination : setup.graph.adjacentNodes(source)) {
 				if (!isDetectiveOccupied(destination)) {
 					Set<ScotlandYard.Transport> availableTransport = setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of());
+
+					//adds all available transport moves with correct tickets
 					for (ScotlandYard.Transport t : availableTransport) {
-						if (availableTickets.get(t.requiredTicket()) >= 1) {
+						boolean hasCorrectTicket = availableTickets.get(t.requiredTicket()) >= 1;
+						if (hasCorrectTicket) {
 							availableMoves.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
 						}
 					}
+
+					//adds secret ticket moves without counting Ferries twice
 					if (player.has(ScotlandYard.Ticket.SECRET) && !availableTransport.contains(ScotlandYard.Transport.FERRY) && !availableTransport.isEmpty()){
 						availableMoves.add(new Move.SingleMove(player.piece(), source, ScotlandYard.Ticket.SECRET, destination));
 					}
