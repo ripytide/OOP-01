@@ -246,9 +246,16 @@ public final class MyGameStateFactory implements Factory<GameState> {
         }
 
         public MyGameState advanceNoCheck(Move move) {
+            if (move.commencedBy().isDetective()) {
+                return advanceDetective(move);
+            } else {
+                return advanceMrX(move);
+            }
+        }
+
+        private MyGameState advanceDetective(Move move){
             // mutable copy of things
             List<Piece> newRemaining = new ArrayList<>(remaining);
-            List<LogEntry> newLog = new ArrayList<>(log);
             List<Player> newDetectives = new ArrayList<>(detectives);
             Player newMrX;
             HashMap<ScotlandYard.Ticket, Integer> newMrXTickets = new HashMap<>(mrX.tickets());
@@ -257,71 +264,83 @@ public final class MyGameStateFactory implements Factory<GameState> {
             newRemaining.remove(currentPiece);
 
             Move.Visitor<Integer> getEndLocationVisitor = new GetEndLocationVisitor();
-            if (currentPiece.isDetective()) {
-                if (newRemaining.isEmpty()) {
-                    newRemaining.add(mrX.piece());
-                }
 
-                Player detective = getDetective(currentPiece).get();
-                newDetectives.remove(detective);
-
-                HashMap<ScotlandYard.Ticket, Integer> newDetectiveTickets = new HashMap<>(detective.tickets());
-                removeUsedTickets(newDetectiveTickets, move.tickets());
-                giveUsedTicket(newMrXTickets, move.tickets());
-
-                newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
-                newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
-
-                MyGameState partiallyAdvancedState = new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
-                if (partiallyAdvancedState.getMoves().isEmpty() && !newRemaining.isEmpty() && !newRemaining.stream().filter(p -> p.isDetective()).collect(Collectors.toList()).isEmpty()) {
-                    newRemaining = new ArrayList<>(Arrays.asList(mrX.piece()));
-                }
-
-            } else {
-                newRemaining = getDetectivePieces(detectives);
-
-                int moveNumber = log.size();
-
-                //used in appending log entries
-                Move.Visitor<List<LogEntry>> getAdditionalLogEntriesVisitor = new Move.Visitor<List<LogEntry>>() {
-                    @Override
-                    public List<LogEntry> visit(Move.SingleMove move) {
-                        List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
-                        if (setup.moves.get(moveNumber) == false) {
-                            newAdditionalLogEntries.add(LogEntry.hidden(move.ticket));
-                        } else {
-                            newAdditionalLogEntries.add(LogEntry.reveal(move.ticket, move.destination));
-                        }
-                        return newAdditionalLogEntries;
-                    }
-
-                    @Override
-                    public List<LogEntry> visit(Move.DoubleMove move) {
-                        List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
-                        if (setup.moves.get(moveNumber) == false) {
-                            newAdditionalLogEntries.add(LogEntry.hidden(move.ticket1));
-                        } else {
-                            newAdditionalLogEntries.add(LogEntry.reveal(move.ticket1, move.destination1));
-                        }
-
-                        if (setup.moves.get(moveNumber + 1) == false) {
-                            newAdditionalLogEntries.add(LogEntry.hidden(move.ticket2));
-                        } else {
-                            newAdditionalLogEntries.add(LogEntry.reveal(move.ticket2, move.destination2));
-                        }
-
-                        return newAdditionalLogEntries;
-                    }
-                };
-
-                newLog.addAll(move.accept(getAdditionalLogEntriesVisitor));
-
-                removeUsedTickets(newMrXTickets, move.tickets());
-
-                newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), move.accept(getEndLocationVisitor));
+            if (newRemaining.isEmpty()) {
+                newRemaining.add(mrX.piece());
             }
 
-            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
+            Player detective = getDetective(currentPiece).get();
+            newDetectives.remove(detective);
+
+            HashMap<ScotlandYard.Ticket, Integer> newDetectiveTickets = new HashMap<>(detective.tickets());
+            removeUsedTickets(newDetectiveTickets, move.tickets());
+            giveUsedTicket(newMrXTickets, move.tickets());
+
+            newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
+            newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
+
+            MyGameState partiallyAdvancedState = new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, ImmutableList.copyOf(newDetectives));
+            if (partiallyAdvancedState.getMoves().isEmpty() && !newRemaining.isEmpty() && !newRemaining.stream().filter(p -> p.isDetective()).collect(Collectors.toList()).isEmpty()) {
+                newRemaining = new ArrayList<>(Arrays.asList(mrX.piece()));
+            }
+
+            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, ImmutableList.copyOf(newDetectives));
+        }
+
+        private MyGameState advanceMrX(Move move){
+            // mutable copy of things
+            List<Piece> newRemaining = new ArrayList<>(remaining);
+            List<LogEntry> newLog = new ArrayList<>(log);
+            HashMap<ScotlandYard.Ticket, Integer> newMrXTickets = new HashMap<>(mrX.tickets());
+
+            Piece currentPiece = move.commencedBy();
+            newRemaining.remove(currentPiece);
+
+            Move.Visitor<Integer> getEndLocationVisitor = new GetEndLocationVisitor();
+
+            newRemaining = getDetectivePieces(detectives);
+
+            int moveNumber = log.size();
+
+            //used in appending log entries
+            Move.Visitor<List<LogEntry>> getAdditionalLogEntriesVisitor = new Move.Visitor<List<LogEntry>>() {
+                @Override
+                public List<LogEntry> visit(Move.SingleMove move) {
+                    List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
+                    if (setup.moves.get(moveNumber) == false) {
+                        newAdditionalLogEntries.add(LogEntry.hidden(move.ticket));
+                    } else {
+                        newAdditionalLogEntries.add(LogEntry.reveal(move.ticket, move.destination));
+                    }
+                    return newAdditionalLogEntries;
+                }
+
+                @Override
+                public List<LogEntry> visit(Move.DoubleMove move) {
+                    List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
+                    if (setup.moves.get(moveNumber) == false) {
+                        newAdditionalLogEntries.add(LogEntry.hidden(move.ticket1));
+                    } else {
+                        newAdditionalLogEntries.add(LogEntry.reveal(move.ticket1, move.destination1));
+                    }
+
+                    if (setup.moves.get(moveNumber + 1) == false) {
+                        newAdditionalLogEntries.add(LogEntry.hidden(move.ticket2));
+                    } else {
+                        newAdditionalLogEntries.add(LogEntry.reveal(move.ticket2, move.destination2));
+                    }
+
+                    return newAdditionalLogEntries;
+                }
+            };
+
+            newLog.addAll(move.accept(getAdditionalLogEntriesVisitor));
+
+            removeUsedTickets(newMrXTickets, move.tickets());
+
+            Player newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), move.accept(getEndLocationVisitor));
+
+            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, detectives);
         }
 
         private List<Piece> getDetectivePieces(ImmutableList<Player> detectives) {
