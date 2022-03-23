@@ -307,10 +307,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
                 @Override
                 public List<LogEntry> visit(Move.SingleMove move) {
                     List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
-                    if (setup.moves.get(moveNumber) == false) {
-                        newAdditionalLogEntries.add(LogEntry.hidden(move.ticket));
-                    } else {
+                    if (setup.moves.get(moveNumber)) {
                         newAdditionalLogEntries.add(LogEntry.reveal(move.ticket, move.destination));
+                    } else {
+                        newAdditionalLogEntries.add(LogEntry.hidden(move.ticket));
                     }
                     return newAdditionalLogEntries;
                 }
@@ -340,7 +340,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
             Player newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), move.accept(getEndLocationVisitor));
 
-            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, detectives);
+            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, detectives);
         }
 
         private List<Piece> getDetectivePieces(ImmutableList<Player> detectives) {
