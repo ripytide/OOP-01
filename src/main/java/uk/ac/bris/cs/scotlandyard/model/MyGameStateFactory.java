@@ -261,26 +261,26 @@ public final class MyGameStateFactory implements Factory<GameState> {
             HashMap<ScotlandYard.Ticket, Integer> newMrXTickets = new HashMap<>(mrX.tickets());
 
             Piece currentPiece = move.commencedBy();
-            newRemaining.remove(currentPiece);
-
+            Player detective = getDetective(currentPiece).get();
             Move.Visitor<Integer> getEndLocationVisitor = new GetEndLocationVisitor();
 
-            if (newRemaining.isEmpty()) {
-                newRemaining.add(mrX.piece());
-            }
+            newRemaining.remove(currentPiece);
+            //if last detective moved make MrX's turn
+            if (newRemaining.isEmpty()) newRemaining.add(mrX.piece());
 
-            Player detective = getDetective(currentPiece).get();
-            newDetectives.remove(detective);
-
+            //update tickets
             HashMap<ScotlandYard.Ticket, Integer> newDetectiveTickets = new HashMap<>(detective.tickets());
             removeUsedTickets(newDetectiveTickets, move.tickets());
             giveUsedTicket(newMrXTickets, move.tickets());
 
+            //update pieces
+            newDetectives.remove(detective);
             newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
             newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
 
+            //check if should skip rest of detectives if they have no moves
             MyGameState partiallyAdvancedState = new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, ImmutableList.copyOf(newDetectives));
-            if (partiallyAdvancedState.getMoves().isEmpty() && !newRemaining.isEmpty() && !newRemaining.stream().filter(p -> p.isDetective()).collect(Collectors.toList()).isEmpty()) {
+            if (partiallyAdvancedState.getMoves().isEmpty() && !newRemaining.isEmpty() && partiallyAdvancedState.isDetectivesTurn()) {
                 newRemaining = new ArrayList<>(Arrays.asList(mrX.piece()));
             }
 
