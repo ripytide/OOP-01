@@ -22,7 +22,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
         //checking validity of parameters given
         if (mrX == null) throw new NullPointerException("MrX is Null");
         if (!mrX.isMrX()) throw new IllegalArgumentException("No mrX");
-        if (detectives.stream().filter(p -> p.isMrX()).toList().size() > 0) {
+        if (detectives.stream().filter(Player::isMrX).toList().size() > 0) {
             throw new IllegalArgumentException("Multiple MrXs");
         }
         checkDetectivesValidity(detectives);
@@ -55,19 +55,18 @@ public final class MyGameStateFactory implements Factory<GameState> {
             if (p.tickets().get(ScotlandYard.Ticket.DOUBLE) > 0) {
                 throw new IllegalArgumentException("detectives should not have double tickets");
             }
-            if (p == null) throw new NullPointerException("A detective is Null");
         }
     }
 
-    private final class MyGameState implements GameState {
+    private static final class MyGameState implements GameState {
 
-        private GameSetup setup;
-        private ImmutableSet<Piece> remaining;
-        private ImmutableList<LogEntry> log;
-        private Player mrX;
-        private ImmutableList<Player> detectives;
-        private ImmutableSet<Move> moves;
-        private ImmutableSet<Piece> winner;
+        private final GameSetup setup;
+        private final ImmutableSet<Piece> remaining;
+        private final ImmutableList<LogEntry> log;
+        private final Player mrX;
+        private final ImmutableList<Player> detectives;
+        private final ImmutableSet<Move> moves;
+        private final ImmutableSet<Piece> winner;
 
 
         private MyGameState(@Nonnull final GameSetup setup, @Nonnull final ImmutableSet<Piece> remaining, @Nonnull final ImmutableList<LogEntry> log, @Nonnull final Player mrX, @Nonnull final ImmutableList<Player> detectives) {
@@ -81,11 +80,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
         }
 
 
+        @Nonnull
         @Override
         public GameSetup getSetup() {
             return setup;
         }
 
+        @Nonnull
         @Override
         public ImmutableSet<Piece> getPlayers() {
             Set<Piece> allPlayers = new HashSet<>(getDetectivePieces(detectives));
@@ -96,7 +97,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
         @Nonnull
         @Override
         public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-            return getDetective(detective).map(d -> d.location());
+            return getDetective(detective).map(Player::location);
         }
 
         @Nonnull
@@ -127,6 +128,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
             return getMoves();
         }
 
+        @Nonnull
         @Override
         public MyGameState advance(Move move) {
             if (!moves.contains(move)) throw new IllegalArgumentException("Illegal move: " + move);
@@ -172,9 +174,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
             if (mrXWins) {
                 return ImmutableSet.of(mrX.piece());
             } else if (detectivesWin) {
-                return ImmutableSet.copyOf(detectives.stream().map(d -> d.piece()).collect(Collectors.toSet()));
+                return ImmutableSet.copyOf(detectives.stream().map(Player::piece).collect(Collectors.toSet()));
             } else if (isMrXTurn()) {
-                MyGameState nextTurn = advanceNoCheck(possibleMoves.stream().collect(Collectors.toList()).get(0));
+                MyGameState nextTurn = advanceNoCheck(possibleMoves.stream().toList().get(0));
                 return nextTurn.winner;
             } else {
                 return ImmutableSet.of();
@@ -238,7 +240,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
                 removeUsedTickets(availableTickets, List.of(move1.ticket));
 
                 Set<Move.SingleMove> availableSecondMoves = getSingleMoves(player, destination1, availableTickets);
-                doubleMoves.addAll(availableSecondMoves.stream().map(move2 -> new Move.DoubleMove(mrX.piece(), move1.source(), move1.ticket, destination1, move2.ticket, move2.destination)).collect(Collectors.toList()));
+                doubleMoves.addAll(availableSecondMoves.stream().map(move2 -> new Move.DoubleMove(mrX.piece(), move1.source(), move1.ticket, destination1, move2.ticket, move2.destination)).toList());
 
             }
 
@@ -278,10 +280,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
             newDetectives.add(new Player(currentPiece, ImmutableMap.copyOf(newDetectiveTickets), move.accept(getEndLocationVisitor)));
             newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), mrX.location());
 
-            //check if should skip rest of detectives if they have no moves
+            //check if it should skip rest of detectives if they have no moves
             MyGameState partiallyAdvancedState = new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, ImmutableList.copyOf(newDetectives));
             if (partiallyAdvancedState.getMoves().isEmpty() && !newRemaining.isEmpty() && partiallyAdvancedState.isDetectivesTurn()) {
-                newRemaining = new ArrayList<>(Arrays.asList(mrX.piece()));
+                newRemaining = new ArrayList<>(List.of(mrX.piece()));
             }
 
             return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(log), newMrX, ImmutableList.copyOf(newDetectives));
@@ -310,7 +312,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
         //used in appending log entries
         private Move.Visitor<List<LogEntry>> getAdditionalLogEntriesVisitorCreator(Integer moveNumber){
-            return new Move.Visitor<List<LogEntry>>() {
+            return new Move.Visitor<>() {
                 @Override
                 public List<LogEntry> visit(Move.SingleMove move) {
                     List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
@@ -343,7 +345,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
         }
 
         private List<Piece> getDetectivePieces(ImmutableList<Player> detectives) {
-            return detectives.stream().map(d -> d.piece()).collect(Collectors.toList());
+            return detectives.stream().map(Player::piece).collect(Collectors.toList());
         }
     }
 }
