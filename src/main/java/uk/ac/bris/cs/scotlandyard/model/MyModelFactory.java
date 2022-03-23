@@ -19,8 +19,10 @@ public final class MyModelFactory implements Factory<Model> {
 	@Nonnull @Override public Model build(GameSetup setup,
 	                                      Player mrX,
 	                                      ImmutableList<Player> detectives) {
-		// TODO
-		throw new RuntimeException("Implement me!");
+
+		MyGameStateFactory myGameStateFactory = new MyGameStateFactory();
+		Board.GameState newGameState = myGameStateFactory.build(setup, mrX, detectives);
+		return new MyModel(newGameState);
 	}
 
 	private class MyModel implements Model{
@@ -35,7 +37,7 @@ public final class MyModelFactory implements Factory<Model> {
 		@Nonnull
 		@Override
 		public Board getCurrentBoard() {
-			return null;
+			return gameState;
 		}
 
 		@Override
@@ -45,13 +47,13 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void unregisterObserver(@Nonnull Observer observer) {
-
+			observers.remove(observer);
 		}
 
 		@Nonnull
 		@Override
 		public ImmutableSet<Observer> getObservers() {
-			return null;
+			return ImmutableSet.copyOf(observers);
 		}
 
 		@Override
