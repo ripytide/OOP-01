@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableList;
 import javax.annotation.Nonnull;
 
 import com.google.common.collect.ImmutableSet;
-import javafx.beans.Observable;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
 import java.util.ArrayList;
@@ -25,7 +24,7 @@ public final class MyModelFactory implements Factory<Model> {
 		return new MyModel(newGameState);
 	}
 
-	private class MyModel implements Model {
+	private static class MyModel implements Model {
 		ArrayList<Observer> observers;
 		Board.GameState gameState;
 
