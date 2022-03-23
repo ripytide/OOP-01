@@ -25,11 +25,11 @@ public final class MyModelFactory implements Factory<Model> {
 		return new MyModel(newGameState);
 	}
 
-	private class MyModel implements Model{
+	private class MyModel implements Model {
 		ArrayList<Observer> observers;
 		Board.GameState gameState;
 
-		public MyModel(Board.GameState gameState){
+		public MyModel(Board.GameState gameState) {
 			observers = new ArrayList<>();
 			this.gameState = gameState;
 		}
@@ -41,17 +41,17 @@ public final class MyModelFactory implements Factory<Model> {
 		}
 
 		@Override
-		public void registerObserver(@Nonnull Observer observer) {
-			if(observer == null) throw new NullPointerException("observer is null");
-			if(observers.contains(observer)) throw new IllegalArgumentException("repeat observer");
+		public void registerObserver(Observer observer) {
+			if (observer == null) throw new NullPointerException("observer is null");
+			if (observers.contains(observer)) throw new IllegalArgumentException("repeat observer");
 
 			observers.add(observer);
 		}
 
 		@Override
-		public void unregisterObserver(@Nonnull Observer observer) {
-			if(observer == null) throw new NullPointerException("observer is null");
-			if(!observers.contains(observer)) throw new IllegalArgumentException("observer not registered");
+		public void unregisterObserver(Observer observer) {
+			if (observer == null) throw new NullPointerException("observer is null");
+			if (!observers.contains(observer)) throw new IllegalArgumentException("observer not registered");
 
 			observers.remove(observer);
 		}
@@ -64,7 +64,16 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void chooseMove(@Nonnull Move move) {
-
+			gameState = gameState.advance(move);
+			if (gameState.getWinner().isEmpty()) {
+				for (Observer o : observers) {
+					o.onModelChanged(gameState, Observer.Event.MOVE_MADE);
+				}
+			} else {
+				for (Observer o : observers) {
+					o.onModelChanged(gameState, Observer.Event.GAME_OVER);
+				}
+			}
 		}
 	}
 }
