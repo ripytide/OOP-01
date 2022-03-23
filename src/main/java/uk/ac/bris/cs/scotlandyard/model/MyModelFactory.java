@@ -42,11 +42,17 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void registerObserver(@Nonnull Observer observer) {
+			if(observer == null) throw new NullPointerException("observer is null");
+			if(observers.contains(observer)) throw new IllegalArgumentException("repeat observer");
+
 			observers.add(observer);
 		}
 
 		@Override
 		public void unregisterObserver(@Nonnull Observer observer) {
+			if(observer == null) throw new NullPointerException("observer is null");
+			if(!observers.contains(observer)) throw new IllegalArgumentException("observer not registered");
+
 			observers.remove(observer);
 		}
 
