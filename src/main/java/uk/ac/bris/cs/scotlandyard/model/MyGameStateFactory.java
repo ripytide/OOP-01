@@ -292,18 +292,25 @@ public final class MyGameStateFactory implements Factory<GameState> {
             List<Piece> newRemaining = new ArrayList<>(remaining);
             List<LogEntry> newLog = new ArrayList<>(log);
             HashMap<ScotlandYard.Ticket, Integer> newMrXTickets = new HashMap<>(mrX.tickets());
-
             Piece currentPiece = move.commencedBy();
+
+            //change turns
             newRemaining.remove(currentPiece);
-
-            Move.Visitor<Integer> getEndLocationVisitor = new GetEndLocationVisitor();
-
             newRemaining = getDetectivePieces(detectives);
 
-            int moveNumber = log.size();
+            //updating MrX's log
+            Integer moveNumber = log.size();
+            newLog.addAll(move.accept(getAdditionalLogEntriesVisitorCreator(moveNumber)));
 
-            //used in appending log entries
-            Move.Visitor<List<LogEntry>> getAdditionalLogEntriesVisitor = new Move.Visitor<List<LogEntry>>() {
+            removeUsedTickets(newMrXTickets, move.tickets());
+            Player newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), move.accept(new GetEndLocationVisitor()));
+
+            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, detectives);
+        }
+
+        //used in appending log entries
+        private Move.Visitor<List<LogEntry>> getAdditionalLogEntriesVisitorCreator(Integer moveNumber){
+            return new Move.Visitor<List<LogEntry>>() {
                 @Override
                 public List<LogEntry> visit(Move.SingleMove move) {
                     List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
@@ -318,13 +325,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
                 @Override
                 public List<LogEntry> visit(Move.DoubleMove move) {
                     List<LogEntry> newAdditionalLogEntries = new ArrayList<>();
-                    if (setup.moves.get(moveNumber) == false) {
+                    if (!setup.moves.get(moveNumber)) {
                         newAdditionalLogEntries.add(LogEntry.hidden(move.ticket1));
                     } else {
                         newAdditionalLogEntries.add(LogEntry.reveal(move.ticket1, move.destination1));
                     }
 
-                    if (setup.moves.get(moveNumber + 1) == false) {
+                    if (!setup.moves.get(moveNumber + 1)) {
                         newAdditionalLogEntries.add(LogEntry.hidden(move.ticket2));
                     } else {
                         newAdditionalLogEntries.add(LogEntry.reveal(move.ticket2, move.destination2));
@@ -333,14 +340,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
                     return newAdditionalLogEntries;
                 }
             };
-
-            newLog.addAll(move.accept(getAdditionalLogEntriesVisitor));
-
-            removeUsedTickets(newMrXTickets, move.tickets());
-
-            Player newMrX = new Player(mrX.piece(), ImmutableMap.copyOf(newMrXTickets), move.accept(getEndLocationVisitor));
-
-            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), ImmutableList.copyOf(newLog), newMrX, detectives);
         }
 
         private List<Piece> getDetectivePieces(ImmutableList<Player> detectives) {
